@@ -1,0 +1,13 @@
+services:
+  automation-runner:
+    build: .
+    container_name: web-automation-runner
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+    restart: always
+
+    shm_size: "1gb"   # ✅ CRITICAL FIX
