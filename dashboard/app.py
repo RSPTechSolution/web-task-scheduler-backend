@@ -26,14 +26,16 @@ app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="None" if SESSION_COOKIE_SECURE else "Lax",
-    SESSION_COOKIE_SECURE=SESSION_COOKIE_SECURE,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=False,  # IMPORTANT (until HTTPS)
 )
 
 CORS(
     app,
     supports_credentials=True,
-    resources={r"/api/*": {"origins": FRONTEND_ORIGINS}},
+    origins=FRONTEND_ORIGINS,
+    allow_headers=["Content-Type"],
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 )
 
 LOG_LINE_PATTERN = re.compile(

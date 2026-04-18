@@ -21,7 +21,8 @@ logs/
 *.log
 data/
 *.pid
-
+.cache/
+.gitconfig
 # Playwright / browser artifacts
 playwright-report/
 test-results/
