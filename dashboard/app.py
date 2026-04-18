@@ -44,6 +44,14 @@ LOG_LINE_PATTERN = re.compile(
     r"\[(?P<level>[A-Z]+)\] (?P<message>.*)$"
 )
 
+LEVEL_EMOJIS = {
+    "INFO": "✨",
+    "WARNING": "⚠️",
+    "ERROR": "❌",
+    "CRITICAL": "🚨",
+    "DEBUG": "🛠️",
+}
+
 
 def api_login_required(view_func):
     @wraps(view_func)
@@ -55,7 +63,7 @@ def api_login_required(view_func):
     return wrapped_view
 
 
-def _load_log_entries(limit=120):
+def _load_log_entries(limit=20):
     try:
         with open(LOG_FILE, "r", encoding="utf-8") as file_obj:
             lines = file_obj.readlines()
@@ -65,6 +73,7 @@ def _load_log_entries(limit=120):
                 "timestamp": "",
                 "timezone": "IST",
                 "level": "ERROR",
+                "emoji": LEVEL_EMOJIS["ERROR"],
                 "message": f"Could not load logs: {exc}",
             }
         ]
@@ -87,8 +96,9 @@ def _load_log_entries(limit=120):
 
     recent_entries = entries[-limit:]
     for entry in recent_entries:
+        entry["emoji"] = LEVEL_EMOJIS.get(entry["level"], "📝")
         entry["human"] = (
-            f"{entry['timestamp']} {entry.get('timezone', 'IST')}  "
+            f"{entry['emoji']} {entry['timestamp']} {entry.get('timezone', 'IST')}  "
             f"{entry['level'].title()}  {entry['message']}"
         )
 
