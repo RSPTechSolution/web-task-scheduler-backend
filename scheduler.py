@@ -7,7 +7,12 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from automation.task import run_attendance_task
-from config.settings import SCHEDULER_STATE_FILE, TIMEZONE
+from config.settings import (
+    SCHEDULER_STATE_FILE,
+    SIGNIN_TIME,
+    SIGNOUT_TIME,
+    TIMEZONE,
+)
 from services.logger import logger
 
 scheduler = BackgroundScheduler(timezone=TIMEZONE)
@@ -109,29 +114,38 @@ def start_scheduler():
         scheduler.start()
         logger.info("Background scheduler started.")
 
+    # Parse times from .env
+    try:
+        in_h, in_m = map(int, SIGNIN_TIME.split(':'))
+        out_h, out_m = map(int, SIGNOUT_TIME.split(':'))
+    except Exception as e:
+        logger.error(f"Failed to parse scheduler times from .env: {e}. Falling back to defaults.")
+        in_h, in_m = 10, 20
+        out_h, out_m = 21, 0
+
     # Check and add Sign-in job if it doesn't exist
     if not scheduler.get_job("attendance_signin"):
         scheduler.add_job(
             run_scheduled_attendance,
-            CronTrigger(day_of_week="mon-fri", hour=10, minute=10),
+            CronTrigger(day_of_week="mon-fri", hour=in_h, minute=in_m, timezone=TIMEZONE),
             args=["Sign-in"],
             id="attendance_signin",
             name="Sign-in",
             replace_existing=True,
         )
-        logger.info("Added 'Sign-in' job (Mon-Fri 10:10 AM IST)")
+        logger.info(f"Added 'Sign-in' job (Mon-Fri {in_h:02d}:{in_m:02d} IST)")
 
     # Check and add Sign-out job if it doesn't exist
     if not scheduler.get_job("attendance_signout"):
         scheduler.add_job(
             run_scheduled_attendance,
-            CronTrigger(day_of_week="mon-fri", hour=21, minute=0),
+            CronTrigger(day_of_week="mon-fri", hour=out_h, minute=out_m, timezone=TIMEZONE),
             args=["Sign-out"],
             id="attendance_signout",
             name="Sign-out",
             replace_existing=True,
         )
-        logger.info("Added 'Sign-out' job (Mon-Fri 09:00 PM IST)")
+        logger.info(f"Added 'Sign-out' job (Mon-Fri {out_h:02d}:{out_m:02d} IST)")
 
     logger.info("Scheduler check complete.")
 

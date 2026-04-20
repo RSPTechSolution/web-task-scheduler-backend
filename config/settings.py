@@ -31,5 +31,7 @@ FRONTEND_ORIGINS = [origin.strip() for origin in FRONTEND_ORIGIN.split(",") if o
 LOG_FILE = "logs/app.log"
 SCHEDULER_STATE_FILE = "data/scheduler_state.json"
 TIMEZONE = "Asia/Kolkata"
+SIGNIN_TIME = os.getenv("SIGNIN_TIME", "10:20")
+SIGNOUT_TIME = os.getenv("SIGNOUT_TIME", "21:00")
 MAX_RETRIES = 3
 RETRY_DELAY = 10
