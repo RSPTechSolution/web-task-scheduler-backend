@@ -18,12 +18,17 @@ from scheduler import (
     get_scheduler_snapshot,
     pause_scheduler,
     resume_scheduler,
+    start_scheduler,
     unblock_date,
 )
 from services.history import get_history
 from services.logger import logger
 
 app = Flask(__name__)
+
+# Start the scheduler (This ensures it runs when hosted via Gunicorn)
+start_scheduler()
+
 app.secret_key = FLASK_SECRET_KEY
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
@@ -46,11 +51,26 @@ LOG_LINE_PATTERN = re.compile(
 )
 
 LEVEL_EMOJIS = {
-    "INFO": "✨",
-    "WARNING": "⚠️",
-    "ERROR": "❌",
-    "CRITICAL": "🚨",
-    "DEBUG": "🛠️",
+    "INFO": "🔹",
+    "WARNING": "🟠",
+    "ERROR": "🔴",
+    "CRITICAL": "📢",
+    "DEBUG": "⚙️",
+}
+
+KEYWORD_EMOJIS = {
+    "success": "✅",
+    "failed": "❌",
+    "login": "🔑",
+    "logout": "🚪",
+    "attendance": "📅",
+    "task": "🤖",
+    "email": "📧",
+    "skip": "⏭️",
+    "start": "🏁",
+    "complete": "🎯",
+    "click": "🖱️",
+    "found": "🔍",
 }
 
 
@@ -97,9 +117,19 @@ def _load_log_entries(limit=20):
 
     recent_entries = entries[-limit:]
     for entry in recent_entries:
-        entry["emoji"] = LEVEL_EMOJIS.get(entry["level"], "📝")
+        # Default emoji by level
+        emoji = LEVEL_EMOJIS.get(entry["level"], "📝")
+        
+        # Override with keyword emoji
+        msg_lower = entry["message"].lower()
+        for kw, e in KEYWORD_EMOJIS.items():
+            if kw in msg_lower:
+                emoji = e
+                break
+                
+        entry["emoji"] = emoji
         entry["human"] = (
-            f"{entry['emoji']} {entry['timestamp']} {entry.get('timezone', 'IST')}  "
+            f"{emoji} {entry['timestamp']} {entry.get('timezone', 'IST')}  "
             f"{entry['level'].title()}  {entry['message']}"
         )
 

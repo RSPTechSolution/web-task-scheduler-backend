@@ -102,31 +102,38 @@ def run_scheduled_attendance(job_name):
 
 
 def start_scheduler():
-    if scheduler.running:
-        return
+    # Ensure data directory exists
+    os.makedirs("data", exist_ok=True)
+    
+    if not scheduler.running:
+        scheduler.start()
+        logger.info("Background scheduler started.")
 
-    logger.info("Initializing scheduler...")
+    # Check and add Sign-in job if it doesn't exist
+    if not scheduler.get_job("attendance_signin"):
+        scheduler.add_job(
+            run_scheduled_attendance,
+            CronTrigger(day_of_week="mon-fri", hour=10, minute=10),
+            args=["Sign-in"],
+            id="attendance_signin",
+            name="Sign-in",
+            replace_existing=True,
+        )
+        logger.info("Added 'Sign-in' job (Mon-Fri 10:10 AM IST)")
 
-    scheduler.add_job(
-        run_scheduled_attendance,
-        CronTrigger(day_of_week="mon-fri", hour=10, minute=10),
-        args=["Sign-in"],
-        id="attendance_signin",
-        name="Sign-in",
-        replace_existing=True,
-    )
+    # Check and add Sign-out job if it doesn't exist
+    if not scheduler.get_job("attendance_signout"):
+        scheduler.add_job(
+            run_scheduled_attendance,
+            CronTrigger(day_of_week="mon-fri", hour=21, minute=0),
+            args=["Sign-out"],
+            id="attendance_signout",
+            name="Sign-out",
+            replace_existing=True,
+        )
+        logger.info("Added 'Sign-out' job (Mon-Fri 09:00 PM IST)")
 
-    scheduler.add_job(
-        run_scheduled_attendance,
-        CronTrigger(day_of_week="mon-fri", hour=21, minute=0),
-        args=["Sign-out"],
-        id="attendance_signout",
-        name="Sign-out",
-        replace_existing=True,
-    )
-
-    scheduler.start()
-    logger.info("Scheduler started. Jobs scheduled for 10:10 AM and 9:00 PM IST (Mon-Fri)")
+    logger.info("Scheduler check complete.")
 
 
 def pause_scheduler():
