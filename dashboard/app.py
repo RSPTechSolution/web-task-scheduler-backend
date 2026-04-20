@@ -20,6 +20,7 @@ from scheduler import (
     resume_scheduler,
     unblock_date,
 )
+from services.history import get_history
 from services.logger import logger
 
 app = Flask(__name__)
@@ -139,7 +140,9 @@ def session_status():
 @app.route("/api/dashboard", methods=["GET"])
 @api_login_required
 def dashboard_data():
-    return jsonify(get_scheduler_snapshot())
+    snapshot = get_scheduler_snapshot()
+    snapshot["history"] = get_history()
+    return jsonify(snapshot)
 
 
 @app.route("/api/logs", methods=["GET"])

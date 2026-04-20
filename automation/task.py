@@ -3,8 +3,9 @@ import time
 from playwright.sync_api import sync_playwright
 
 from config.settings import MAX_RETRIES, RETRY_DELAY
+from services.history import add_history_entry
 from services.logger import logger
-from services.mailer import send_alert_email, send_success_email
+from services.mailer import send_alert_email, send_skipped_email, send_success_email
 
 from .actions import perform_attendance_action
 from .login import login_to_portal
@@ -40,12 +41,12 @@ def _read_recent_logs():
         return "Could not retrieve logs."
 
 
-def run_attendance_task():
+def run_attendance_task(target_action=None):
     attempt = 0
 
     while attempt < MAX_RETRIES:
         attempt += 1
-        logger.info("Starting attendance task (Attempt %s/%s)", attempt, MAX_RETRIES)
+        logger.info("Starting attendance task (Attempt %s/%s) for %s", attempt, MAX_RETRIES, target_action or "auto")
 
         browser = None
         context = None
@@ -73,10 +74,17 @@ def run_attendance_task():
                 page = context.new_page()
                 try:
                     login_to_portal(page)
-                    action_name = perform_attendance_action(page)
-
-                    logger.info("Attendance task completed successfully.")
-                    send_success_email(action_name)
+                    action_name, was_skipped = perform_attendance_action(page, target_action=target_action)
+                    
+                    if was_skipped:
+                        logger.info("Attendance task skipped: %s", action_name)
+                        send_skipped_email(target_action or "Attendance Action")
+                        add_history_entry(target_action or "Manual", "Skipped", "Already in desired state")
+                    else:
+                        logger.info("Attendance task completed successfully: %s", action_name)
+                        send_success_email(action_name)
+                        add_history_entry(target_action or "Manual", "Success", action_name)
+                    
                     return True
                 finally:
                     _safe_close(page, "page")
@@ -95,4 +103,5 @@ def run_attendance_task():
             else:
                 logger.critical("Max retries reached. Sending alert.")
                 send_alert_email(str(exc), _read_recent_logs(), attempts=attempt)
+                add_history_entry(target_action or "Manual", "Failed", str(exc))
                 return False

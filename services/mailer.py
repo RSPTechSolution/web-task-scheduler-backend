@@ -118,3 +118,42 @@ def send_success_email(action):
         "Success email sent",
         "Failed to send success email",
     )
+
+
+def send_skipped_email(action):
+    current_date, current_time = _current_timestamp_strings()
+    subject = f"ℹ️ Attendance Skipped - {action} (Already Done) ({current_date})"
+    html_body = f"""
+<h2 style="color:#1976d2; margin-bottom:10px;">
+  Attendance Action Skipped
+</h2>
+
+<p style="color:#333;">
+  The scheduled <strong>{html.escape(action)}</strong> task was skipped because the system detected that you are already in the requested state.
+</p>
+
+<table style="width:100%; margin-top:15px; border-collapse:collapse;">
+  <tr>
+    <td style="padding:8px; font-weight:bold;">Attempted Action</td>
+    <td style="padding:8px;">{html.escape(action)}</td>
+  </tr>
+  <tr style="background:#f9f9f9;">
+    <td style="padding:8px; font-weight:bold;">Time</td>
+    <td style="padding:8px;">{html.escape(current_time)}</td>
+  </tr>
+  <tr>
+    <td style="padding:8px; font-weight:bold;">Result</td>
+    <td style="padding:8px; color:#1976d2;">Already Event Found - No Action Needed</td>
+  </tr>
+</table>
+
+<p style="margin-top:20px; color:#777; font-size:12px;">
+  This is an automated notification from your Web Automation System.
+</p>
+"""
+    _send_email(
+        subject,
+        html_body,
+        "Skip email sent",
+        "Failed to send skip email",
+    )

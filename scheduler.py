@@ -98,7 +98,7 @@ def run_scheduled_attendance(job_name):
         return False
 
     logger.info("Running scheduled job '%s'", job_name)
-    return run_attendance_task()
+    return run_attendance_task(target_action=job_name)
 
 
 def start_scheduler():
